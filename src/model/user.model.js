@@ -36,20 +36,24 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     minlength: 8,
-    required: [true, "Please provide a password"],
+    required: function(){
+      return this.role !== "guest"
+    },
+
     select: false,
   },
-  
-  confirmedPassword: {
-    type: String,
-    required: [true, "Please confirm your password"],
-    validate: {
-      validator: function (val) {
-        return val === this.password;
-      },
-      message: "Passwords do not match",
-    }
-  },
+  //edozie said he will handle this 
+
+  // confirmedPassword: {
+  //   type: String,
+  //   required: [true, "Please confirm your password"],
+  //   validate: {
+  //     validator: function (val) {
+  //       return val === this.password;
+  //     },
+  //     message: "Passwords do not match",
+  //   }
+  // },
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,

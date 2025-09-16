@@ -6,7 +6,7 @@ export const bookHotel = async (req, res) => {
   try {
     const { firstName, lastName, email, phoneNumber, hotelName, checkIn, checkOut, guests } = req.body;
 
-    // find or create user
+    // check if guest user already exists in database 
     let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({
@@ -14,8 +14,7 @@ export const bookHotel = async (req, res) => {
         lastName,
         email,
         phoneNumber,
-        agreedToTerms: true,
-        isGuest: true,
+        role: "guest"
       });
     }
 
@@ -24,11 +23,14 @@ export const bookHotel = async (req, res) => {
       hotelName,
       checkIn,
       checkOut,
-      guests,
+      guests
     });
 
-    res.status(201).json({ message: "Hotel booked successfully", hotel });
+    res.status(201).json({ message: "Hotel booked successfully",
+      data:{
+        booking
+      } });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ message: error.message, data: null });
   }
 };

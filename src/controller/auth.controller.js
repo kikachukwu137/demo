@@ -42,23 +42,48 @@ const generateToken = id => {
   }
   
 
+export const signup = catchAsync(async (req, res, next) => {
+  const { firstName, lastName, phoneNumber, email, password, confirmedPassword } = req.body;
 
-export const signup = catchAsync(async(req,res,next)=>{
-  const user = await User.create({
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    phoneNumber: req.body.phoneNumber,
-    email: req.body.email,
-    password: req.body.password,
-    confirmedPassword: req.body.confirmedPassword
+  // 1. Find if user exists
+  let user = await User.findOne({ email });
 
-  })
-  createSendToken(user,201,res)
-   
-  
-})
-  
+  if (user && user.role === "guest") {
+    // 2. Upgrade guest -> registered user
+    user.role = "user";
+    user.password = password;
+    user.firstName = firstName || user.firstName;
+    user.lastName = lastName || user.lastName;
+    user.phoneNumber = phoneNumber || user.phoneNumber;
 
+    // If you still want to keep confirmedPassword validation:
+    if (confirmedPassword && confirmedPassword !== password) {
+      return next(new AppError("Passwords do not match", 400));
+    }
+
+    await user.save();
+  } else if (!user) {
+    // 3. Create a brand new user
+    if (confirmedPassword && confirmedPassword !== password) {
+      return next(new AppError("Passwords do not match", 400));
+    }
+
+    user = await User.create({
+      firstName,
+      lastName,
+      phoneNumber,
+      email,
+      password,
+      role: "user",
+    });
+  } else {
+    // 4. Already a registered user
+    return next(new AppError("User already registered with this email", 400));
+  }
+
+  // 5. Login user immediately after signup/upgrade
+  createSendToken(user, 201, res);
+});
 export const login = catchAsync(async(req,res,next)=>{
   const email = req.body.email
   const password = req.body.password
@@ -66,9 +91,21 @@ export const login = catchAsync(async(req,res,next)=>{
     return next(new AppError('email and password required',401))
   }
   const user = await User.findOne({email}).select('+password')
-  if(!user || !(await user.correctPassword(password, user.password))){
-    return next(new AppError('invalid email or password',401))
+  if(!user){
+    return next(new AppError("No user found with this email", 404))
   }
+  // 3 Block guests from  logging in 
+  if(user.role === "guest"){
+    return next (new AppError("Guest accounts cannot log in.Please sign up",403))
+  }
+  //4 check password
+
+  const isCorrect = await user.correctPassword(password, user.password)
+  if(!isCorrect){
+    return next(new AppError('invalid email or password',401))
+
+  }
+  5 // if everything  ok, send token
   createSendToken(user,201,res)
   // res.status(201).json({
   //   status: 'success',

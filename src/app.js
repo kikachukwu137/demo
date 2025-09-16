@@ -2,7 +2,8 @@ import express from 'express';
 import AppError from './util/AppError.js';
 import { globalErrorHandler } from './middleware/globalErrorHandler.js';
 import userRouter from './route/user.route.js';
-import guestRouter from './route/guest.route.js';
+import hotelRouter from './route/book.route.js';
+import flightRouter from './route/flight.route.js';
 
 
 
@@ -14,12 +15,15 @@ if(process.env.NODE_ENV === 'development'){
 }
 
 
-app.use(express.json())
+app.use(express.json()) 
 
 
 
 app.use("/api/v1/users",userRouter)
-app.use("/api/v1/guest",guestRouter)
+app.use("/api/v1/hotels",hotelRouter)
+app.use("/api/v1/flights",flightRouter)
+
+
 
 
 
